@@ -10,12 +10,14 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
 
         # Changing field 'BlueprintInstance.user'
-        db.alter_column('thing_blueprintinstance', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True))
+        if db.backend_name != 'postgres':
+            db.alter_column('thing_blueprintinstance', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True))
 
     def backwards(self, orm):
 
         # Changing field 'BlueprintInstance.user'
-        db.alter_column('thing_blueprintinstance', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['auth.User']))
+        if db.backend_name != 'postgres':
+            db.alter_column('thing_blueprintinstance', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['auth.User']))
 
     models = {
         'auth.group': {
