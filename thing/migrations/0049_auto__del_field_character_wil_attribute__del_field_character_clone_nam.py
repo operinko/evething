@@ -61,7 +61,8 @@ class Migration(SchemaMigration):
 
 
         # Changing field 'Character.corporation'
-        db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['thing.Corporation'], null=True))
+        if db.backend_name != 'postgres':
+            db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['thing.Corporation'], null=True))
 
     def backwards(self, orm):
         # Adding field 'Character.wil_attribute'
@@ -151,7 +152,8 @@ class Migration(SchemaMigration):
 
 
         # Changing field 'Character.corporation'
-        db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['thing.Corporation']))
+        if db.backend_name != 'postgres':
+            db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['thing.Corporation']))
 
     models = {
         'auth.group': {
