@@ -8,17 +8,21 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.delete_primary_key('thing_apikey')
-        db.rename_column('thing_apikey', 'id', 'keyid')
         if db.backend_name == 'postgres':
+            db.execute("ALTER TABLE thing_apikey DROP CONSTRAINT thing_apikey_pkey")
+            db.execute("ALTER TABLE thing_apikey RENAME COLUMN id TO keyid")
             db.execute("ALTER TABLE thing_apikey ADD COLUMN id INTEGER NOT NULL PRIMARY KEY")
             db.execute("CREATE SEQUENCE thing_apikey_id_seq")
             db.execute("SELECT setval('thing_apikey_id_seq', 1)")
             db.execute("ALTER TABLE thing_apikey ALTER COLUMN id SET DEFAULT nextval('thing_apikey_id_seq'::regclass)")
         elif db.backend_name == 'mysql':
+            db.delete_primary_key('thing_apikey')
+            db.rename_column('thing_apikey', 'id', 'keyid')
             db.add_column('thing_apikey', 'id', models.AutoField(primary_key=True))
         # try a fallback for any other weird databases
         else:
+            db.delete_primary_key('thing_apikey')
+            db.rename_column('thing_apikey', 'id', 'keyid')
             db.add_column('thing_apikey', 'id', models.AutoField(primary_key=True, default=0), keep_default=False)
 
     def backwards(self, orm):
