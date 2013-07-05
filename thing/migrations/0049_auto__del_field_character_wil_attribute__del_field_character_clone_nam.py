@@ -62,7 +62,9 @@ class Migration(SchemaMigration):
 
         # Changing field 'Character.corporation'
         if db.backend_name != 'postgres':
-            db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['thing.Corporation'], null=True))
+            db.execute("ALTER TABLE thing_character DROP CONSTRAINT corporation_id_refs_id_2c293a30")
+            
+        db.alter_column('thing_character', 'corporation_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['thing.Corporation'], null=True))
 
     def backwards(self, orm):
         # Adding field 'Character.wil_attribute'
