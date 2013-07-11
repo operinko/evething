@@ -1,7 +1,10 @@
 from django.conf import settings
-#from django.conf.urls.defaults import *
-from coffin.conf.urls.defaults import *
+from django.conf.urls.defaults import *
+#from coffin.conf.urls.defaults import *
+from django.conf.urls import patterns
+from django.views.generic import TemplateView
 from django.contrib.auth.views import login, logout
+
 from registration.forms import RegistrationFormTermsOfService
 
 # Uncomment the next two lines to enable the admin:
@@ -15,8 +18,9 @@ urlpatterns = patterns('',
     
     # Authentication things
     #(r'^accounts/', include('registration.urls')),
-    url(r'^accounts/login/$', 'django.contrib.auth.views.login', name="auth_login"),
-    url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}, name="auth_logout"),
+    (r'^accounts/', include('registration.backends.default.urls')),
+    #url(r'^accounts/login/$', 'django.contrib.auth.views.login', name="auth_login"),
+    #url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}, name="auth_logout"),
 )
 
 urlpatterns += patterns('thing.views',
