@@ -109,6 +109,7 @@ INSTALLED_APPS = (
     'mptt',
     'jingo',
     'thing',
+    'registration',
 )
 
 # A sample logging configuration. The only tangible logging

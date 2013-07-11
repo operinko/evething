@@ -30,7 +30,7 @@ def character(request, character_name):
         public = False
 
     # If it's for public access, make sure this character is visible
-    if public and not char.config.is_public:
+    if public and not char.config.is_public and not request.user.is_staff:
         raise Http404
 
     return character_common(request, char, public=public)
@@ -55,11 +55,11 @@ def character_common(request, char, public=True, anonymous=False):
 
     # Do various visibility things here instead of in awful template code
     show = {
-        'clone': not anonymous and (not public or char.config.show_clone),
-        'implants': not anonymous and (not public or char.config.show_implants),
-        'queue': anonymous or not public or char.config.show_skill_queue,
-        'standings': not anonymous and (not public or char.config.show_standings),
-        'wallet': not anonymous and (not public or char.config.show_wallet),
+        'clone': not anonymous and (not public or char.config.show_clone or request.user.is_staff),
+        'implants': not anonymous and (not public or char.config.show_implants or request.user.is_staff),
+        'queue': anonymous or not public or char.config.show_skill_queue or request.user.is_staff,
+        'standings': not anonymous and (not public or char.config.show_standings or request.user.is_staff),
+        'wallet': not anonymous and (not public or char.config.show_wallet or request.user.is_staff),
     }
 
     # Retrieve skill queue
@@ -266,7 +266,10 @@ def character_skillplan(request, character_name, skillplan_id):
     # If the user is logged in, check if the character belongs to them
     if request.user.is_authenticated():
         try:
-            character = Character.objects.select_related('config', 'details').distinct().get(name=character_name, apikeys__user=request.user)
+            if not request.user.is_staff:
+                character = Character.objects.select_related('config', 'details').distinct().get(name=character_name, apikeys__user=request.user)
+            else:
+                character = Character.objects.get(name=character_name)
         except Character.DoesNotExist:
             pass
         else:

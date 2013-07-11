@@ -2,7 +2,7 @@ from django.conf import settings
 #from django.conf.urls.defaults import *
 from coffin.conf.urls.defaults import *
 from django.contrib.auth.views import login, logout
-
+from registration.forms import RegistrationFormTermsOfService
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -14,6 +14,7 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     
     # Authentication things
+    #(r'^accounts/', include('registration.urls')),
     url(r'^accounts/login/$', 'django.contrib.auth.views.login', name="auth_login"),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout', {'next_page': '/'}, name="auth_logout"),
 )
@@ -49,6 +50,9 @@ urlpatterns += patterns('thing.views',
     (r'^character/(?P<character_name>[\w\'\- ]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_skillplan'),
     url(r'^character_anon/(?P<anon_key>[a-z0-9]+)/$', 'character_anonymous', name='character_anonymous'),
     (r'^character_anon/(?P<anon_key>[a-z0-9]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_anonymous_skillplan'),
+    
+    url(r'^users/$', 'user', name='users'),
+    (r'^users/(?P<user>[\w\'\- ]+)/$', 'user_show'),
     
     (r'^contracts/', 'contracts'),
 

@@ -7,7 +7,7 @@ EVEthing.character = {
         $("#public-checkbox").change(EVEthing.character.public_checkbox_change);
         EVEthing.character.public_checkbox_change();
 
-        EVEthing.character.anon_checked = $('#anon-key').attr('checked');
+        EVEthing.character.anon_checked = $('#anon-key').prop('checked');
         $("#anon-key").change(EVEthing.character.anon_toggle);
         EVEthing.character.anon_toggle();
     },
@@ -22,13 +22,13 @@ EVEthing.character = {
     },
 
     anon_toggle: function() {
-        var checked = $('#anon-key').attr('checked');
+        var checked = $('#anon-key').prop('checked');
         if (checked != EVEthing.character.anon_checked) {
             $('#anon-key-link').remove();
             EVEthing.character.anon_checked = checked;
         }
 
-        if (checked == "checked") {
+        if (checked == true) {
             $("#anon-key-text").removeAttr("disabled");
             /*if ($("#anon-key-text").val() == "") {
                 $("#anon-key-text").val(randString(16));

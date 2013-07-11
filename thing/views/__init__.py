@@ -10,4 +10,5 @@ from industry import *
 from orders import *
 from trade import *
 from transactions import *
+from users import *
 from wallet_journal import *
