@@ -5,5 +5,6 @@
 local_settings.py
 skill_graph.pickle
 static/js/evething-combined.js
+static/js/evething/gosquared.js
 thing/profile_middleware.py
 worker*.pid
