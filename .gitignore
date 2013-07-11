@@ -8,3 +8,5 @@ static/js/evething-combined.js
 static/js/evething/gosquared.js
 thing/profile_middleware.py
 worker*.pid
+build/*
+celerybeat-schedule
