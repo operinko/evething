@@ -20,7 +20,10 @@ class Migration(SchemaMigration):
         # Adding index on 'Asset', fields ['corporation_id']
         db.create_index(u'thing_asset', ['corporation_id'])
 
-
+        if db.backend_name == 'postgres':
+            db.execute("ALTER TABLE thing_asset DROP CONSTRAINT character_id_refs_id_b9fee54c")
+            db.execute("ALTER TABLE thing_asset DROP CONSTRAINT system_id_refs_id_3cb97bd1")
+ 
         # Changing field 'Asset.character'
         db.alter_column(u'thing_asset', 'character_id', self.gf('django.db.models.fields.related.ForeignKey')(default=0, to=orm['thing.Character']))
 
@@ -40,6 +43,10 @@ class Migration(SchemaMigration):
 
         # Changing field 'Asset.corporation_id'
         db.alter_column(u'thing_asset', 'corporation_id', self.gf('django.db.models.fields.IntegerField')(null=True))
+
+        if db.backend_name == 'postgres':
+            db.execute("ALTER TABLE thing_asset DROP CONSTRAINT character_id_refs_id_b9fee54c")
+            db.execute("ALTER TABLE thing_asset DROP CONSTRAINT system_id_refs_id_3cb97bd1")
 
         # Changing field 'Asset.character'
         db.alter_column(u'thing_asset', 'character_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['thing.Character'], null=True))
