@@ -32,6 +32,7 @@
               <ul class="nav" id="nav-list">
 {% if authed %}
 {% set profile = user.get_profile() %}
+                <li><a href="{{ url ('thing.views.skillplan') }}">Skillplans</a></li>
                 {% if profile.show_assets %}<li><a href="{{ url('thing.views.assets_summary') }}">Assets</a></li>{% endif %}
                 {% if profile.show_blueprints %}<li><a href="{{ url('thing.views.blueprints') }}">Blueprints</a></li>{% endif %}
 {% if profile.show_contracts %}
@@ -118,6 +119,7 @@
 {% if debug %}
     <script src="{{ STATIC_URL}}js/less-1.3.3.min.js"></script>
     <script src="{{ STATIC_URL}}js/jquery.tablesorter.js"></script>
+    <script src="{{ STATIC_URL}}js/jquery.cookie.js"></script>
     <script src="{{ STATIC_URL}}js/bootstrap.js"></script>
     <script src="{{ STATIC_URL}}js/bootstrap-datepicker.js"></script>
     <script src="{{ STATIC_URL}}js/evething.js"></script>

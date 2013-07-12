@@ -10,3 +10,4 @@ thing/profile_middleware.py
 worker*.pid
 build/*
 celerybeat-schedule
+.DS_Store

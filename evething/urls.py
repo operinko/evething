@@ -4,6 +4,7 @@ from django.conf.urls.defaults import *
 from django.conf.urls import patterns
 from django.views.generic import TemplateView
 from django.contrib.auth.views import login, logout
+from django.http import HttpResponseRedirect
 
 from registration.forms import RegistrationFormTermsOfService
 
@@ -33,9 +34,16 @@ urlpatterns += patterns('thing.views',
     (r'^account/apikey/delete/$', 'account_apikey_delete'),
     (r'^account/apikey/edit/$', 'account_apikey_edit'),
     (r'^account/apikey/purge/$', 'account_apikey_purge'),
-    (r'^account/skillplan/add/$', 'account_skillplan_add'),
-    (r'^account/skillplan/delete/$', 'account_skillplan_delete'),
-    (r'^account/skillplan/edit/$', 'account_skillplan_edit'),
+    
+    (r'^skillplan/$', 'skillplan'),
+    (r'^skillplan/create/$', 'skillplan_add'),
+    (r'^skillplan/import/$', 'skillplan_import_emp'),
+    (r'^skillplan/delete/$', 'skillplan_delete'),
+    (r'^skillplan/edit/(?P<skillplan_id>\d+)$', 'skillplan_edit'),
+    (r'^skillplan/edit/$', lambda x: HttpResponseRedirect('/skillplan/')),
+    (r'^skillplan/info/edit/$', 'skillplan_info_edit'),
+    (r'^skillplan/prerequisite/$','skillplan_add_skill'),
+
 
     (r'^assets/$', 'assets_summary'),
     (r'^assets/filter/$', 'assets_filter'),

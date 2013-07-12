@@ -631,6 +631,17 @@ class Item(models.Model):
         else:
             return Decimal(str(agg['movement__sum']))
 
+#----------------------------------------------------------------------
+#- Skill Parent
+class SkillParent(models.Model):   
+    parent_skill = models.ForeignKey('Skill', related_name="child_skill")
+    child_skill  = models.ForeignKey('Skill', related_name="parent_skill")
+    level        = models.SmallIntegerField()
+
+    def get_roman_level(self):
+        return ['', 'I', 'II', 'III', 'IV', 'V'][self.level]
+
+
 # ---------------------------------------------------------------------------
 # Skills
 class Skill(models.Model):
@@ -661,6 +672,13 @@ class Skill(models.Model):
     primary_attribute = models.SmallIntegerField(choices=ATTRIBUTE_CHOICES)
     secondary_attribute = models.SmallIntegerField(choices=ATTRIBUTE_CHOICES)
 
+    parents = models.ManyToManyField('self'
+                                    , blank=True
+                                    , null=True
+                                    , through="SkillParent"
+                                    , related_name="children"
+                                    , symmetrical=False)
+    
     def __unicode__(self):
         return '%s (Rank %d; %s/%s)' % (self.item.name, self.rank, self.get_primary_attribute_display(),
             self.get_secondary_attribute_display())
@@ -700,6 +718,33 @@ class Skill(models.Model):
 
         return pri + (sec / 2.0)
 
+    def add_parent(self, skill, level):
+        parent_skill, created = SkillParent.objects.get_or_create(
+            child_skill=self,
+            parent_skill=skill,
+            level=level)
+        return parent_skill
+    
+    def remove_parent(self, skill):
+        SkillParent.objects.filter(
+            child_skill=self,
+            parent_skill=skill).delete()
+        return self
+    
+    def clean_parents(self):
+        SkillParent.objects.filter(
+            child_skill=self).delete()
+        return self
+
+    def get_skill_parent(self):
+        return SkillParent.objects.filter(
+            child_skill=self)
+            
+    def get_skill_children(self):
+        return SkillParent.objects.filter(
+            parent_skill=self)
+            
+                
 # ---------------------------------------------------------------------------
 # Historical item price data
 class PriceHistory(models.Model):

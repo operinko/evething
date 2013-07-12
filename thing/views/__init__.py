@@ -12,3 +12,4 @@ from trade import *
 from transactions import *
 from users import *
 from wallet_journal import *
+from skillplan import *
