@@ -5,6 +5,7 @@ from decimal import *
 from xml.sax.saxutils import unescape
 
 from django.contrib.auth.models import User
+from django.contrib import admin
 from django.db import models
 from django.db.models import Q, Avg, Sum
 from django.db.models.signals import post_save
@@ -41,6 +42,7 @@ class UserProfile(models.Model):
     show_trade = models.BooleanField(default=True)
     show_transactions = models.BooleanField(default=True)
     show_wallet_journal = models.BooleanField(default=True)
+    show_on_full_list = models.BooleanField(default=True)
 
     show_item_icons = models.BooleanField(default=False)
     entries_per_page = models.IntegerField(default=100)
@@ -49,7 +51,7 @@ class UserProfile(models.Model):
     home_chars_per_row = models.IntegerField(default=4)
     home_sort_order = models.CharField(choices=HOME_SORT_ORDERS, max_length=12, default='apiname')
     home_sort_descending = models.BooleanField(default=False)
-    home_hide_characters = models.TextField(default='')
+    home_hide_characters = models.TextField(blank=True,default='')
     home_show_locations = models.BooleanField(default=True)
     home_highlight_backgrounds = models.BooleanField(default=True)
     home_highlight_borders = models.BooleanField(default=True)

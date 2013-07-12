@@ -8,6 +8,7 @@ except ImportError:
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib import admin
 from django.db.models import Q, Avg, Count, Max, Min, Sum
 
 from thing.models import *

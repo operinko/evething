@@ -34,7 +34,8 @@ def user(request):
     users = User.objects.select_related('profile').all().order_by('username')
     profiles = []
     for user in users:
-        profiles.append(user.userprofile)
+        if user.userprofile.show_on_full_list == True:
+            profiles.append(user.userprofile)
         
     tt.add_time('profile')
     all_chars = {}
