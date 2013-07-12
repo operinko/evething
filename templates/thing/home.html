@@ -44,7 +44,12 @@
               </span>
               <span class="small pull-right sensitive apikey-name">[{{ character.z_apikey.name }}]</span>
             </div>
-
+            
+            <div>
+              <span></span>
+              <span class="small pull-right sensitive corporation-name">{{ character.corporation.name }} [{{ character.corporation.ticker }}]</span>
+            </div>
+            <div class="clearfix"></div>
             <div>
               <span>{{ character.details.wallet_balance|commas }} ISK</span>
               <span class="small pull-right">{{ character.z_total_sp|commas }} SP</span>

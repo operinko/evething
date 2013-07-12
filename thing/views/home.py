@@ -281,7 +281,7 @@ def home(request):
         temp = [(c.z_apikey.group_name or 'ZZZ', getattr(c, 'z_total_sp', 0), c) for c in char_list]
     elif profile.home_sort_order == 'wallet':
         temp = [(c.z_apikey.group_name or 'ZZZ', c.details and c.details.wallet_balance, c.name.lower(), c) for c in char_list]
-
+    
     temp.sort()
     if profile.home_sort_descending:
         temp.reverse()

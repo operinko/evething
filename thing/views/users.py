@@ -31,19 +31,22 @@ def user(request):
     tt = TimerThing('home')
 
     # Get all user profiles
-    profiles = UserProfile.objects.all()
-
+    users = User.objects.select_related('profile').all().order_by('username')
+    profiles = []
+    for user in users:
+        profiles.append(user.userprofile)
+        
     tt.add_time('profile')
     all_chars = {}
     total_sp = {}
     total_assets = {}
     total_balance = {}
-
+    fsj_id = 211562930
+    fsa_id = 98148924
+    jew_id = 98048689
+    
     # Loop through profiles, work some magic.
     for profile in profiles:
-        # Make a set of characters to hide
-        hide_characters = set(int(c) for c in profile.home_hide_characters.split(',') if c)
-
         # Initialise various data structures
         now = datetime.datetime.utcnow()
 
@@ -233,19 +236,13 @@ def user(request):
         # Sort out well class here ugh
         classes = []
         if char.z_apikey in not_training:
-          if profile.home_highlight_backgrounds:
             classes.append('background-error')
-          if profile.home_highlight_borders:
             classes.append('border-error')
         elif char.z_notifications:
-          if profile.home_highlight_backgrounds:
             classes.append('background-warn')
-          if profile.home_highlight_borders:
             classes.append('border-warn')
         else:
-          if profile.home_highlight_backgrounds:
             classes.append('background-success')
-          if profile.home_highlight_borders:
             classes.append('border-success')
 
         if classes:
@@ -257,36 +254,15 @@ def user(request):
 
         # Decorate/sort based on settings, ugh
         char_list = chars.values()
-        if profile.home_sort_order == 'apiname':
-            temp = [(c.z_apikey.group_name or 'ZZZ', c.z_apikey.name, c.name.lower(), c) for c in char_list]
-        elif profile.home_sort_order == 'charname':
-            temp = [(c.z_apikey.group_name or 'ZZZ', c.name.lower(), c) for c in char_list]
-        elif profile.home_sort_order == 'corpname':
-            temp = [(c.z_apikey.group_name or 'ZZZ', c.corporation.name.lower(), c.name.lower(), c) for c in char_list]
-        elif profile.home_sort_order == 'totalsp':
-            temp = [(c.z_apikey.group_name or 'ZZZ', getattr(c, 'z_total_sp', 0), c) for c in char_list]
-        elif profile.home_sort_order == 'wallet':
-            temp = [(c.z_apikey.group_name or 'ZZZ', c.details and c.details.wallet_balance, c.name.lower(), c) for c in char_list]
 
-        temp.sort()
-        if profile.home_sort_descending:
-            temp.reverse()
+        temp = []
+        temp.extend((c) for c in char_list if c.corporation_id == fsj_id)
+        temp.extend((c) for c in char_list if c.corporation_id == fsa_id)
+        temp.extend((c) for c in char_list if c.corporation_id == jew_id)
+        temp.extend((c) for c in char_list if c.corporation_id != fsj_id and c.corporation_id != fsa_id and c.corporation_id != jew_id)
 
         tt.add_time('sort')
-
-        # Now group based on group_name
-        bleh = OrderedDict()
-        for temp_data in temp:
-          bleh.setdefault(temp_data[0], []).append(temp_data[-1])
-
-        char_lists = []
-        for char_list in bleh.values():
-          first = [char for char in char_list if char.z_training and char.id not in hide_characters]
-          last = [char for char in char_list if not char.z_training and char.id not in hide_characters]
-          char_lists.append(first + last)
-
-        all_chars[profile.user.id] = char_lists
-
+        all_chars[profile.user.id] = flatten(temp)
         tt.add_time('group')
 
         # Try retrieving corporations from cache
@@ -329,7 +305,6 @@ def user(request):
     tt.add_time('template')
     if settings.DEBUG:
         tt.finished()
-
     return out
 
 # Display all characters belonging to User.
@@ -581,8 +556,6 @@ def user_show(request, user):
         temp = [(c.z_apikey.group_name or 'ZZZ', c.details and c.details.wallet_balance, c.name.lower(), c) for c in char_list]
 
     temp.sort()
-    if profile.home_sort_descending:
-        temp.reverse()
 
     tt.add_time('sort')
 
@@ -593,8 +566,8 @@ def user_show(request, user):
 
     char_lists = []
     for char_list in bleh.values():
-      first = [char for char in char_list if char.z_training and char.id not in hide_characters]
-      last = [char for char in char_list if not char.z_training and char.id not in hide_characters]
+      first = [char for char in char_list if char.z_training]
+      last = [char for char in char_list if not char.z_training]
       char_lists.append(first + last)
 
     tt.add_time('group')
@@ -618,9 +591,8 @@ def user_show(request, user):
         cache.set(cache_key, corporations, 300)
 
     tt.add_time('corps')
-
     out = render_page(
-        'thing/home.html',
+        'thing/user.html',
         {
             'profile': profile,
             'not_training': not_training,
@@ -642,3 +614,18 @@ def user_show(request, user):
         tt.finished()
 
     return out
+    
+def flatten(l, ltypes=(list, tuple)):
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
