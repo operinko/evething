@@ -31,11 +31,14 @@ def user(request):
     tt = TimerThing('home')
 
     # Get all user profiles
-    users = User.objects.select_related('profile').all().order_by('username')
+    users = User.objects.filter(
+        userprofile__show_on_full_list=True,
+    ).prefetch_related(
+        'userprofile',
+    ).all()
     profiles = []
     for user in users:
-        if user.userprofile.show_on_full_list == True:
-            profiles.append(user.userprofile)
+        profiles.append(user.userprofile)
         
     tt.add_time('profile')
     all_chars = {}
