@@ -424,8 +424,7 @@ class CharacterSkill(models.Model):
 # Character contacts
 class Contact(models.Model):
     character = models.ForeignKey('Character')
-
-    id = models.IntegerField(primary_key=True)
+    contact_id = models.IntegerField(default=0, null=False)
     contact_name = models.CharField(max_length=64)
     standing = models.DecimalField(max_digits=5, decimal_places=3)
 
