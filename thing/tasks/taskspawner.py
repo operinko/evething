@@ -23,6 +23,9 @@ CHAR_URLS = {
     APIKey.CHAR_STANDINGS_MASK: ('thing.standings', '/char/Standings.xml.aspx', 'et_medium'),
     APIKey.CHAR_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/char/WalletJournal.xml.aspx', 'et_medium'),
     APIKey.CHAR_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/char/WalletTransactions.xml.aspx', 'et_medium'),
+    #APIKey.CHAR_MAIL_MESSAGES_MASK: ('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium'),
+    #APIKey.CHAR_MAIL_BODIES_MASK: ('thing.mail_bodies', '/char/MailBodies.xml.aspx', 'et_medium'),
+    APIKey.CHAR_CONTACTS_MASK: ('thing.contact_list', '/char/ContactList.xml.aspx', 'et_high'),
 }
 
 CORP_URLS = {

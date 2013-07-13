@@ -85,6 +85,9 @@ class APIKey(models.Model):
     CHAR_STANDINGS_MASK = 524288
     CHAR_WALLET_JOURNAL_MASK = 2097152
     CHAR_WALLET_TRANSACTIONS_MASK = 4194304
+    CHAR_CONTACTS_MASK = 16
+    CHAR_MAIL_MESSAGES_MASK = 2048
+    CHAR_MAIL_BODIES_MASK = 512
 
     MASKS_CHAR = (
         CHAR_ACCOUNT_STATUS_MASK,
@@ -99,6 +102,9 @@ class APIKey(models.Model):
         CHAR_STANDINGS_MASK,
         CHAR_WALLET_JOURNAL_MASK,
         CHAR_WALLET_TRANSACTIONS_MASK,
+        CHAR_CONTACTS_MASK,
+        CHAR_MAIL_MESSAGES_MASK,
+        CHAR_MAIL_BODIES_MASK,
     )
 
     CORP_ACCOUNT_BALANCE_MASK = 1
@@ -415,6 +421,13 @@ class CharacterSkill(models.Model):
     def get_roman_level(self):
         return ['', 'I', 'II', 'III', 'IV', 'V'][self.level]
 
+# Character contacts
+class Contact(models.Model):
+    character = models.ForeignKey('Character')
+
+    id = models.IntegerField(primary_key=True)
+    contact_name = models.CharField(max_length=64)
+    standing = models.DecimalField(max_digits=5, decimal_places=3)
 
 # Skill queue
 class SkillQueue(models.Model):

@@ -21,6 +21,9 @@ from skillqueue import SkillQueue
 from standings import Standings
 from walletjournal import WalletJournal
 from wallettransactions import WalletTransactions
+#from mail import MailMessages
+#from mail import MailBodies
+from contacts import ContactList
 
 # Global API tasks
 from alliancelist import AllianceList
