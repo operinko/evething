@@ -92,6 +92,7 @@
 
             <ul class="nav nav-tabs" id="tabs">
               <li class="active"><a href="#tab_skills" data-toggle="tab">Skills</a></li>
+              {% if show.standings %}<li><a href="#tab_contacts" data-toggle="tab">Contacts</a></li>{% endif %}
               {% if show.standings %}<li><a href="#tab_standings" data-toggle="tab">Standings</a></li>{% endif %}
             </ul>
 
@@ -157,6 +158,60 @@
                     <tr><td colspan="2">No standings.</td></tr>
                     {% endfor %}
                   </tbody>
+                </table>
+              </div>
+              
+              <div class="tab-pane" id="tab_contacts">
+                <table class="table table-striped table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="large">Character Contacts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts_char %}
+                        <tr class="{{ contact.contact_class }}">
+                            <td><a href="http://evewho.com/{{ contact.contact_who }}/{{contact.contact_name|replace(' ', '+')}}" target="_blank" rel="nofollow">{{ contact.contact_name }}</a></td>
+                            <td class="r">{{ contact.standing }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2">No contacts.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <table class="table table-striped table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="large">Corporation Contacts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts_corp %}
+                        <tr class="{{ contact.class }}">
+                            <td><a href="http://evewho.com/{{ contact.contact_who }}/{{contact.contact_name|replace(' ', '+')}}" target="_blank" rel="nofollow">{{ contact.contact_name }}</td>
+                            <td class="r">{{ contact.standing }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2">No contacts.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <table class="table table-striped table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="large">Alliance Contacts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts_ally %}
+                        <tr class="{{ contact.class }}">
+                            <td><a href="http://evewho.com/{{ contact.contact_who }}/{{contact.contact_name|replace(' ', '+')}}" target="_blank" rel="nofollow">{{ contact.contact_name }}</a></td>
+                            <td class="r">{{ contact.standing }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2">No contacts.</td></tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
               </div>
               {% endif %}

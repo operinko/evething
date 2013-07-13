@@ -21,6 +21,7 @@ def character(request, character_name):
     characters = characters.distinct()
     
     char = get_object_or_404(characters, name=character_name)
+    
     print char.config
     print char.details
 
@@ -190,20 +191,25 @@ def character_common(request, char, public=True, anonymous=False):
     if show['standings']:
         # Try retrieving standings data from cache
         cache_key = 'character:standings:%s' % (char.id)
-        standings_data = cache.get(cache_key)
+        #standings_data = cache.get(cache_key)
+        standings_data = None
         # Not cached, fetch from database and cache
         if standings_data is None:
             faction_standings = list(char.factionstanding_set.select_related().all())
             corp_standings = list(char.corporationstanding_set.select_related().all())
-            standings_data = (faction_standings, corp_standings)
+            contacts_char = list(Contact.objects.filter(character__id=char.id, contact_type="contactList"))
+            contacts_corp = list(Contact.objects.filter(character__id=char.id, contact_type="corporateContactList"))
+            contacts_ally = list(Contact.objects.filter(character__id=char.id, contact_type="allianceContactList"))
+            standings_data = (faction_standings, corp_standings, contacts_char, contacts_corp, contacts_ally)
             cache.set(cache_key, standings_data, 300)
         # Data was cached
         else:
-            faction_standings, corp_standings = standings_data
+            faction_standings, corp_standings, contacts_char, contacts_corp, contacts_ally = standings_data
     else:
         faction_standings = []
         corp_standings = []
-
+        contacts = []
+    
     # Render template
     out = render_page(
         'thing/character.html',
@@ -220,6 +226,9 @@ def character_common(request, char, public=True, anonymous=False):
             'public_plans': public_plans,
             'faction_standings': faction_standings,
             'corp_standings': corp_standings,
+            'contacts_char': contacts_char,
+            'contacts_corp': contacts_corp,
+            'contacts_ally': contacts_ally,
         },
         request,
     )

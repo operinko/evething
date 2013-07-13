@@ -25,7 +25,7 @@ CHAR_URLS = {
     APIKey.CHAR_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/char/WalletTransactions.xml.aspx', 'et_medium'),
     #APIKey.CHAR_MAIL_MESSAGES_MASK: ('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium'),
     #APIKey.CHAR_MAIL_BODIES_MASK: ('thing.mail_bodies', '/char/MailBodies.xml.aspx', 'et_medium'),
-    APIKey.CHAR_CONTACTS_MASK: ('thing.contact_list', '/char/ContactList.xml.aspx', 'et_high'),
+    APIKey.CHAR_CONTACTS_MASK: ('thing.contact_list', '/char/ContactList.xml.aspx', 'et_medium'),
 }
 
 CORP_URLS = {

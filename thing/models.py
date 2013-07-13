@@ -324,6 +324,7 @@ class Character(models.Model):
     faction_standings = models.ManyToManyField('Faction', related_name='has_standings', through='FactionStanding')
     corporation_standings = models.ManyToManyField('Corporation', related_name='has_standings', through='CorporationStanding')
 
+
     # industry stuff
     #factory_cost = models.DecimalField(max_digits=8, decimal_places=2, default=0.0)
     #factory_per_hour = models.DecimalField(max_digits=8, decimal_places=2, default=0.0)
@@ -423,10 +424,17 @@ class CharacterSkill(models.Model):
 
 # Character contacts
 class Contact(models.Model):
-    character = models.ForeignKey('Character')
-    contact_id = models.IntegerField(default=0, null=False)
+    id = models.IntegerField(primary_key=True)
+    contact_id = models.IntegerField()
+    character = models.ForeignKey('character')
     contact_name = models.CharField(max_length=64)
-    standing = models.DecimalField(max_digits=5, decimal_places=3)
+    standing = models.DecimalField(max_digits=4, decimal_places=2)
+    contact_type = models.CharField(max_length=25)
+    contact_class = models.CharField(max_length=25)
+    contact_who = models.CharField(max_length=8)
+
+    class Meta:
+        ordering = ('-standing',)
 
 # Skill queue
 class SkillQueue(models.Model):
