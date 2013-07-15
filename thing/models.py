@@ -436,6 +436,25 @@ class Contact(models.Model):
     class Meta:
         ordering = ('-standing',)
 
+# Mail Message headers
+class MailMessage(models.Model):
+    message_id = models.IntegerField(primary_key=True)
+
+    sender = models.ForeignKey('character')
+    sent_date = models.DateTimeField()
+    title = models.CharField(max_length=255, blank=True)
+    to_corp_or_ally_id = models.IntegerField(null=True, blank=True)
+    to_characters = models.TextField(blank=True, null=True)
+    to_lists = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ('-sent_date',)
+
+# Mail Bodies
+class MailBody(models.Model):
+    message = models.OneToOneField(MailMessage, primary_key=True, unique=True, related_name="mailbody")
+    body = models.TextField(blank=True, null=True)
+
 # Skill queue
 class SkillQueue(models.Model):
     character = models.ForeignKey('Character')
@@ -655,7 +674,7 @@ class Item(models.Model):
 
 #----------------------------------------------------------------------
 #- Skill Parent
-class SkillParent(models.Model):   
+class SkillParent(models.Model):
     parent_skill = models.ForeignKey('Skill', related_name="child_skill")
     child_skill  = models.ForeignKey('Skill', related_name="parent_skill")
     level        = models.SmallIntegerField()
@@ -700,7 +719,7 @@ class Skill(models.Model):
                                     , through="SkillParent"
                                     , related_name="children"
                                     , symmetrical=False)
-    
+
     def __unicode__(self):
         return '%s (Rank %d; %s/%s)' % (self.item.name, self.rank, self.get_primary_attribute_display(),
             self.get_secondary_attribute_display())
@@ -746,13 +765,13 @@ class Skill(models.Model):
             parent_skill=skill,
             level=level)
         return parent_skill
-    
+
     def remove_parent(self, skill):
         SkillParent.objects.filter(
             child_skill=self,
             parent_skill=skill).delete()
         return self
-    
+
     def clean_parents(self):
         SkillParent.objects.filter(
             child_skill=self).delete()
@@ -761,12 +780,12 @@ class Skill(models.Model):
     def get_skill_parent(self):
         return SkillParent.objects.filter(
             child_skill=self)
-            
+
     def get_skill_children(self):
         return SkillParent.objects.filter(
             parent_skill=self)
-            
-                
+
+
 # ---------------------------------------------------------------------------
 # Historical item price data
 class PriceHistory(models.Model):

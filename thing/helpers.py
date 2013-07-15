@@ -3,9 +3,10 @@ from decimal import *
 
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.template.defaultfilters import stringfilter
+from django.utils.html import strip_tags, escape
 
 from jingo import register
-
+import scrubber
 
 @register.filter
 def tablecols(data, cols):
@@ -55,7 +56,7 @@ def duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)
-    
+
     parts = []
     if d:
         parts.append('%dd' % (d))
@@ -65,7 +66,7 @@ def duration(s):
         parts.append('%dm' % (m))
     if s:
         parts.append('%ds' % (s))
-    
+
     return ' '.join(parts)
 
 @register.filter
@@ -73,7 +74,7 @@ def duration_right(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)
-    
+
     parts = []
     if d:
         parts.append('%dd' % (d))
@@ -82,7 +83,7 @@ def duration_right(s):
     if m or h or d:
         parts.append('%02dm' % (m))
     parts.append('%02ds' % (s))
-    
+
     return ' '.join(parts)
 
 
@@ -139,7 +140,7 @@ BILLION = 10**9
 def humanize(value):
     if value is None or value == '':
         return '0'
-    
+
     if value >= BILLION or value <= -BILLION:
         v = Decimal(value) / BILLION
         return '%sB' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
@@ -166,7 +167,7 @@ def spanif(value, arg):
     parts = arg.split()
     if len(parts) != 3:
         return value
-    
+
     n = int(parts[2])
     if (parts[1] == '<' and value < n) or (parts[1] == '=' and value == n) or (parts[1] == '>' and value > n):
         return '<span class="%s">%s</span>' % (parts[0], value)
@@ -177,3 +178,25 @@ def spanif(value, arg):
 @register.function
 def static(path):
     return staticfiles_storage.url(path)
+
+@register.filter
+def keeptags(text, tags):
+    """
+    Strips all [X]HTML tags except the space separated list of tags
+    from the output.
+
+    Usage: keeptags:"strong em ul li"
+    """
+    tags = [re.escape(tag) for tag in tags.split()]
+    tags_re = '(%s)' % '|'.join(tags)
+    singletag_re = re.compile(r'<(%s\s*/?)>' % tags_re)
+    starttag_re = re.compile(r'<(%s)(\s+[^>]+)>' % tags_re)
+    endtag_re = re.compile(r'<(/%s)>' % tags_re)
+    text = singletag_re.sub('##~~~\g<1>~~~##', text)
+    text = starttag_re.sub('##~~~\g<1>\g<3>~~~##', text)
+    text = endtag_re.sub('##~~~\g<1>~~~##', text)
+    text = strip_tags(text)
+    text = escape(text)
+    recreate_re = re.compile('##~~~([^~]+)~~~##')
+    text = recreate_re.sub('<\g<1>>', text)
+    return text

@@ -94,6 +94,7 @@
               <li class="active"><a href="#tab_skills" data-toggle="tab">Skills</a></li>
               {% if show.standings %}<li><a href="#tab_contacts" data-toggle="tab">Contacts</a></li>{% endif %}
               {% if show.standings %}<li><a href="#tab_standings" data-toggle="tab">Standings</a></li>{% endif %}
+              {% if show.standings %}<li><a href="#tab_mails" data-toggle="tab">Mails</a></li>{% endif %}
             </ul>
 
             <div class="tab-content">
@@ -160,7 +161,7 @@
                   </tbody>
                 </table>
               </div>
-              
+
               <div class="tab-pane" id="tab_contacts">
                 <table class="table table-striped table-condensed table-hover">
                     <thead>
@@ -214,6 +215,98 @@
                     </tbody>
                 </table>
               </div>
+
+              <div class="tab-pane" id="tab_mails">
+                <table class="table table-striped table-condensed table-hover">
+                  <thead>
+                    <tr>
+                      <th colspan="3" class="large">Sent Mails</th>
+                    </tr>
+                    <tr>
+                      <th class="large" style="width: 50%;">Title</th>
+                      <th class="large" style="width: 25%;">Recipient</th>
+                      <th class="large" style="width: 25%; text-align: right;">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for mail in sent_mails %}
+                    <tr>
+                        <td><a data-toggle="modal" href="#mail-{{ mail.message_id }}">{{ mail.title | truncate(60, True) }}</a></td>
+                        <td>{%- if mail.to_characters %}
+                                {%- for mailchars in mail.to_characters %}
+                                  {%- for char in mailchars %} <a href="http://evewho.com/pilot/{{ char.name|replace(' ', '+') }}" target="_blank">{{ char.name }}</a>{% endfor %}
+                                {% endfor %}
+                            {%- elif mail.to_corp_or_ally %}
+                              {%- for obj in mail.to_corp_or_ally %}
+                                <a href="http://evewho.com/{{ mail.corp_or_ally_target }}/{{ obj.name|replace(' ', '+') }}" target="_blank">{{ obj.name }}</a>
+                              {% endfor %}
+                            {% endif %}
+                        </td>
+                        <td class="r">{{ mail.sent_date }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3">No mails.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <table class="table table-striped table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th colspan="3" class="large">Received Mails</th>
+                        </tr>
+                        <tr>
+                          <th class="large" style="width: 50%;">Title</th>
+                          <th class="large" style="width: 25%;">Sender</th>
+                          <th class="large" style="width: 25%; text-align: right;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for recv in received_mails %}
+                    <tr>
+                        <td><a data-toggle="modal" href="#mail-{{ recv.message_id }}">{{ recv.title | truncate(60, True) }}</a></td>
+                        <td>
+                          {%- for char in recv.sender %}<a href="http://evewho.com/pilot/{{ char.name|replace(' ', '+') }}" target="_blank">{{ char.name }}</a>{% endfor %}
+                        </td>
+                        <td class="r">{{ recv.sent_date }}</td>
+                    </tr>
+                    {% else %}
+                        <tr><td>No mails.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+              </div>
+              {% for mail in sent_mails %}
+              <div id="mail-{{ mail.message_id }}" class="modal hide fade in" style="display: none:">
+                <div class="modal-header">
+                  <a class="close" data-dismiss="modal">×</a>
+                  <h3>{{ mail.title }}</h3>
+                </div>
+                <div class="modal-body">
+                  <h5>{%- for char in mail.sender %}<a href="http://evewho.com/pilot/{{ char.name|replace(' ', '+') }}" target="_blank">{{ char.name }}</a>{% endfor %}
+                  - {{ mail.sent_date }}</h5>
+                  <p>{{ mail.body|keeptags('br a')|replace('&quot;', '\"')|safe }}</p>
+                </div>
+                <div class="modal-footer">
+                  <a href="#" class="btn" data-dismiss="modal">Close</a>
+                </div>
+              </div>
+              {% endfor %}
+              {% for recv in received_mails %}
+              <div id="mail-{{ recv.message_id }}" class="modal hide fade in" style="display: none:">
+                <div class="modal-header">
+                  <a class="close" data-dismiss="modal">×</a>
+                  <h3>{{ recv.title }}</h3>
+                </div>
+                <div class="modal-body">
+                  <h5>{%- for char in recv.sender %}<a href="http://evewho.com/pilot/{{ char.name|replace(' ', '+') }}" target="_blank">{{ char.name }}</a>{% endfor %}
+                  - {{ recv.sent_date }}</h5>
+                  <p>{{ recv.body|keeptags('br a')|replace('&quot;', '\"')|safe }}</p>
+                </div>
+                <div class="modal-footer">
+                  <a href="#" class="btn" data-dismiss="modal">Close</a>
+                </div>
+              </div>
+              {% endfor %}
               {% endif %}
             </div>
           </div>
@@ -224,7 +317,7 @@
         <div class="image">
           <img src="{% if anonymous %}{{ STATIC_URL }}img/anonymous_character.jpg{% else %}http://image.eveonline.com/Character/{{ char.id }}_256.jpg{% endif %}" height="256" width="256" class="img-rounded">
         </div>
-        
+
         {%- if not public %}
         <div class="well well-small">
           <h4 class="nomargin">Settings</h4>
@@ -289,7 +382,7 @@
           </form>
         </div>
         {%- endif %}
-        
+
         {% if user_plans -%}
         <div class="well well-small">
           <h4 class="nomargin">My Skill Plans</h4>

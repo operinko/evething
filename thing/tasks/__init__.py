@@ -9,6 +9,7 @@ from accountstatus import AccountStatus
 from apikeyinfo import APIKeyInfo
 from assetlist import AssetList
 from characterinfo import CharacterInfo
+from characterinfo import NewCharacter
 from charactersheet import CharacterSheet
 from contracts import Contracts
 from corporationsheet import CorporationSheet
@@ -21,8 +22,8 @@ from skillqueue import SkillQueue
 from standings import Standings
 from walletjournal import WalletJournal
 from wallettransactions import WalletTransactions
-#from mail import MailMessages
-#from mail import MailBodies
+from mail import MailMessages
+from mail import MailBodies
 from contacts import ContactList
 
 # Global API tasks
