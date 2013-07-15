@@ -22,12 +22,12 @@ class ContactList(APITask):
         }
         if self.fetch_api(url, params) is False or self.root is None:
             return False
-        
+
         new = []
         contactlist = []
         result = self.root.find('result')
         rowsets = result.findall('rowset')
-        
+
         for rowset in rowsets:
             contact_type = rowset.get('name')
             rows = rowset.findall('row')
@@ -40,7 +40,7 @@ class ContactList(APITask):
                     contact_who = 'alli'
                 else:
                     contact_who = 'pilot'
-                
+
                 # High, Good, Neutral, Bad, Horrible
                 if standing == 10:
                     contact_class = "standing-high"
@@ -62,7 +62,7 @@ class ContactList(APITask):
                     contact_class="standing-horrible"
                 else:
                     contact_class="standing-unknown"
-                
+
                 contact = Contact(
                     contact_id=row.get('contactID'),
                     character=character,
@@ -73,7 +73,7 @@ class ContactList(APITask):
                     contact_who=contact_who,
                 )
                 contactlist.append(contact)
-            
+
             for con in contactlist:
                 try:
                     contact = Contact.objects.get(contact_id=con.contact_id, character__id=character.id)
@@ -95,6 +95,5 @@ class ContactList(APITask):
                         contact_who=con.contact_who,
                     )
                     contact.save()
-        
+
         return True
-        

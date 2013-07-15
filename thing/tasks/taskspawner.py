@@ -23,8 +23,7 @@ CHAR_URLS = {
     APIKey.CHAR_STANDINGS_MASK: ('thing.standings', '/char/Standings.xml.aspx', 'et_medium'),
     APIKey.CHAR_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/char/WalletJournal.xml.aspx', 'et_medium'),
     APIKey.CHAR_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/char/WalletTransactions.xml.aspx', 'et_medium'),
-    #APIKey.CHAR_MAIL_MESSAGES_MASK: ('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium'),
-    #APIKey.CHAR_MAIL_BODIES_MASK: ('thing.mail_bodies', '/char/MailBodies.xml.aspx', 'et_medium'),
+    APIKey.CHAR_MAIL_MESSAGES_MASK: ('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium'),
     APIKey.CHAR_CONTACTS_MASK: ('thing.contact_list', '/char/ContactList.xml.aspx', 'et_medium'),
 }
 
@@ -75,7 +74,7 @@ def task_spawner():
     apikeys = apikeys.prefetch_related('characters', 'corp_character__corporation__corpwallet_set')
     #apikeys = apikeys.filter(valid=True, user__userprofile__last_seen__gt=one_month_ago)
     apikeys = apikeys.filter(valid=True)
-    
+
     # Get a set of unique API keys
     keys = {}
     status = {}
@@ -94,7 +93,7 @@ def task_spawner():
     # Iterate over each key, doing stuff
     for keyid, apikey in keys.items():
         masks = apikey.get_masks()
-        
+
         # All keys do keyinfo checks things
         func, url, queue = API_KEY_INFO_URL
         taskstate = status[keyid].get((url, 0), None)
@@ -151,7 +150,7 @@ def task_spawner():
             kwargs={},
             queue=queue,
         )
-    
+
     TaskState.objects.filter(pk__in=ts_ids).update(state=TaskState.QUEUED_STATE, mod_time=now)
 
     # Create the new ones, they can be started next time around
@@ -165,7 +164,7 @@ def task_spawner():
             mod_time=now,
             next_time=now,
         ))
-    
+
     TaskState.objects.bulk_create(new)
 
 # ---------------------------------------------------------------------------

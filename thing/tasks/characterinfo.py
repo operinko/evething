@@ -1,6 +1,6 @@
 from .apitask import APITask
 
-from thing.models import Character
+from thing.models import Character, Corporation
 
 # ---------------------------------------------------------------------------
 
@@ -41,3 +41,37 @@ class CharacterInfo(APITask):
         return True
 
 # ---------------------------------------------------------------------------
+
+class NewCharacter(APITask):
+    name = 'thing.new_character_info'
+    
+    def run(self, url, character_id):
+        if self.init() is False:
+            return
+        
+        try:
+            character = Character.objects.get(pk=character_id)
+        except Character.DoesNotExist:
+            params = { 'characterID': character_id }
+            if self.fetch_api(url, params, False) is False or self.root is None:
+                return
+            
+            corp_id = self.root.findtext('result/corporationID')
+            corp_name = self.root.findtext('result/corporation')
+            try:
+                corporation = Corporation.objects.get(pk=corp_id)
+            except Corporation.DoesNotExist:
+                corporation = Corporation(
+                    id=corp_id,
+                    name=corp_name,
+                )
+                corporation.save()
+
+            character = Character(
+                id=int(self.root.findtext('result/characterID')),
+                name=self.root.findtext('result/characterName'),
+                corporation_id=self.root.findtext('result/corporationID'),
+            )
+            character.save()
+        
+        return True

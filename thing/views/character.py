@@ -19,9 +19,9 @@ def character(request, character_name):
     characters = Character.objects.select_related('config', 'details', 'corporation__alliance')
     characters = characters.filter(apikeys__valid=True)
     characters = characters.distinct()
-    
+
     char = get_object_or_404(characters, name=character_name)
-    
+
     print char.config
     print char.details
 
@@ -45,7 +45,7 @@ def character_anonymous(request, anon_key):
 # Common code for character views
 def character_common(request, char, public=True, anonymous=False):
     tt = TimerThing('character_common')
-    
+
     utcnow = datetime.datetime.utcnow()
 
     # I don't know how this happens but hey, let's fix it here
@@ -191,8 +191,8 @@ def character_common(request, char, public=True, anonymous=False):
     if show['standings']:
         # Try retrieving standings data from cache
         cache_key = 'character:standings:%s' % (char.id)
-        #standings_data = cache.get(cache_key)
-        standings_data = None
+        standings_data = cache.get(cache_key)
+
         # Not cached, fetch from database and cache
         if standings_data is None:
             faction_standings = list(char.factionstanding_set.select_related().all())
@@ -209,7 +209,99 @@ def character_common(request, char, public=True, anonymous=False):
         faction_standings = []
         corp_standings = []
         contacts = []
-    
+
+    if show['standings']:
+        # Try retrieving character mail messages from cache
+        cache_key = 'character:mails:%s' % (char.id)
+        #mail_data = cache.get(cache_key)
+        mail_data = None
+        # Not cached, fetch from database and cache
+        if mail_data is None:
+            sent_mails = []
+            received_mails = []
+            to_corp_or_ally = []
+            corp_or_ally_target = ''
+            sent = list(MailMessage.objects.filter(sender_id=char.id))
+            for mail in sent:
+                sender = Character.objects.filter(pk=mail.sender_id)
+                to_chars_a = mail.to_characters.split(',')
+                to_chars = []
+                try:
+                  mailbody = MailBody.objects.get(pk=mail.message_id)
+                  body = mailbody.body
+                except MailBody.DoesNotExist:
+                  body = ''
+
+                for mailchar in to_chars_a:
+                    if mailchar != "":
+                      to_char = Character.objects.filter(pk=int(mailchar))
+                      to_chars.append(to_char)
+
+                if mail.to_corp_or_ally_id != "" and mail.to_corp_or_ally_id != 0:
+                  try:
+                      to_corp_or_ally=Corporation.objects.filter(pk=mail.to_corp_or_ally_id)
+                      corp_or_ally_target = 'corp'
+                  except Corporation.DoesNotExist:
+                      to_corp_or_ally=Alliance.objects.filter(pk=mail.to_corp_or_ally_id)
+                      corp_or_ally_target = 'alli'
+
+                mail_b = {
+                    'message_id': mail.message_id,
+                    'sender': sender,
+                    'sent_date': mail.sent_date,
+                    'title': mail.title,
+                    'body': body,
+                    'to_corp_or_ally': to_corp_or_ally,
+                    'corp_or_ally_target': corp_or_ally_target,
+                    'to_characters': to_chars,
+                    'to_lists': mail.to_lists,
+                }
+                sent_mails.append(mail_b)
+
+            received = list(MailMessage.objects.select_related('mailbody').filter(
+                Q(to_characters__contains=char.id) |
+                Q(to_corp_or_ally_id__contains=char.corporation.id) |
+                Q(to_corp_or_ally_id__contains=char.corporation.alliance.id)
+            ))
+
+            for recv in received:
+                sender_b = Character.objects.filter(pk=recv.sender_id)
+                to_chars_b = recv.to_characters.split(',')
+                to_chars = []
+
+                try:
+                  mailbody = MailBody.objects.get(pk=recv.message_id)
+                  body_b = mailbody.body
+                except MailBody.DoesNotExist:
+                  body_b = ''
+
+                for mailchar in to_chars_b:
+                  if mailchar != "":
+                    to_char = Character.objects.filter(pk=int(mailchar))
+                    to_chars.append(to_char)
+                try:
+                  to_corp_or_ally=Corporation.objects.filter(pk=recv.to_corp_or_ally_id)
+                except Corporation.DoesNotExist:
+                  to_corp_or_ally=Alliance.objects.filter(pk=recv.to_corp_or_ally_id)
+
+                mail_c = {
+                  'message_id': recv.message_id,
+                  'sender': sender_b,
+                  'sent_date': recv.sent_date,
+                  'title': recv.title,
+                  'body': body_b,
+                  'to_corp_or_ally': to_corp_or_ally,
+                  'to_characters': to_chars,
+                  'to_lists': recv.to_lists,
+                }
+                received_mails.append(mail_c)
+
+            mail_data = (sent_mails, received_mails)
+            cache.set(cache_key, mail_data, 300)
+            # Data was cached
+        else:
+            sent_mails, received_mails = mail_data
+
     # Render template
     out = render_page(
         'thing/character.html',
@@ -229,6 +321,8 @@ def character_common(request, char, public=True, anonymous=False):
             'contacts_char': contacts_char,
             'contacts_corp': contacts_corp,
             'contacts_ally': contacts_ally,
+            'sent_mails': sent_mails,
+            'received_mails': received_mails,
         },
         request,
     )
@@ -289,7 +383,7 @@ def character_skillplan(request, character_name, skillplan_id):
     # Not logged in or character does not belong to user
     if public is True:
         character = get_object_or_404(Character.objects.select_related('config', 'details'), name=character_name, config__is_public=True)
-        
+
         qs = Q(visibility=SkillPlan.GLOBAL_VISIBILITY)
         if request.user.is_authenticated():
             qs |= Q(user=request.user)
@@ -416,7 +510,7 @@ def character_skillplan_common(request, character, skillplan, public=True, anony
                     entry.z_sppm = skill.get_sp_per_minute(character, implants=implant_stats)
                 else:
                     entry.z_sppm = skill.get_sp_per_minute(character)
-            
+
             # 0 sppm is bad
             entry.z_sppm = max(1, entry.z_sppm)
             entry.z_spph = int(entry.z_sppm * 60)
