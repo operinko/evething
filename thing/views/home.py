@@ -41,7 +41,7 @@ def home(request):
     training = set()
     chars = {}
     ship_item_ids = set()
-    
+
     # Try retrieving characters from cache
     cache_key = 'home:characters:%d' % (request.user.id)
     characters = cache.get(cache_key)
@@ -115,7 +115,7 @@ def home(request):
     for sq in queues:
         char = chars[sq.character_id]
         duration = total_seconds(sq.end_time - now)
-        
+
         if 'sq' not in char.z_training:
             char.z_training['sq'] = sq
             char.z_training['skill_duration'] = duration
@@ -124,7 +124,7 @@ def home(request):
             training.add(char.z_apikey)
 
             skill_qs.append(Q(character=char, skill=sq.skill))
-        
+
         char.z_training['queue_duration'] = duration
 
     tt.add_time('training')
@@ -206,7 +206,7 @@ def home(request):
                 'text': 'Empty!',
                 'tooltip': 'Skill queue is empty!',
             })
-        
+
         if char.z_training:
             # Room in skill queue
             if char.z_training['queue_duration'] < ONE_DAY:
@@ -282,7 +282,7 @@ def home(request):
         temp = [(c.z_apikey.group_name or 'ZZZ', getattr(c, 'z_total_sp', 0), c) for c in char_list]
     elif profile.home_sort_order == 'wallet':
         temp = [(c.z_apikey.group_name or 'ZZZ', c.details and c.details.wallet_balance, c.name.lower(), c) for c in char_list]
-    
+
     temp.sort()
     if profile.home_sort_descending:
         temp.reverse()
@@ -293,7 +293,7 @@ def home(request):
     bleh = OrderedDict()
     for temp_data in temp:
         bleh.setdefault(temp_data[0], []).append(temp_data[-1])
-    
+
     char_lists = []
     for char_list in bleh.values():
         first = [char for char in char_list if char.z_training and char.id not in hide_characters]
@@ -302,22 +302,56 @@ def home(request):
 
     tt.add_time('group')
 
+    # Try getting total asset value for corporation in cache
+    cache_key = 'home:corp_total_assets:%d' % (request.user.id)
+    corp_total_assets = cache.get(cache_key)
+    #corp_total_assets = None
+    # Not cached, fetch and cache
+    if corp_total_assets is None:
+      corp_ids_a = APIKey.objects.filter(user=request.user.id).exclude(corp_character=None).values('corp_character__corporation')
+      corp_asset_totals = OrderedDict()
+      for corp_id in corp_ids_a:
+        total = AssetSummary.objects.filter(corporation_id=corp_id['corp_character__corporation']).aggregate(Sum('total_value'))
+        if corp_id['corp_character__corporation'] not in corp_asset_totals:
+            corp_asset_totals[corp_id['corp_character__corporation']] = total['total_value__sum']
+
+      corp_total_assets = corp_asset_totals
+      cache.set(cache_key, corp_total_assets, 300)
+
+      #corp_total_assets = AssetSummary.objects.filter(
+      #  corporation_id__in=corp_ids_a
+      #).aggregate(
+      #  t=Sum('total_value'),
+      #)['t']
+      #cache.set(cache_key, corp_total_assets, 300)
+
+
     # Try retrieving corporations from cache
     cache_key = 'home:corporations:%d' % (request.user.id)
+    cache_key_b = 'home:corp_balances:%d' % (request.user.id)
+    corp_balance_totals = cache.get(cache_key_b)
+    #corp_balance_totals = None
     corporations = cache.get(cache_key)
+    #corporations = None
     # Not cached, fetch from database and cache
     if corporations is None:
         corp_ids = APIKey.objects.filter(user=request.user.id).exclude(corp_character=None).values('corp_character__corporation')
         corp_map = OrderedDict()
+        corp_balance_totals = OrderedDict()
         for corp_wallet in CorpWallet.objects.select_related().filter(corporation__in=corp_ids):
             if corp_wallet.corporation_id not in corp_map:
                 corp_map[corp_wallet.corporation_id] = corp_wallet.corporation
                 corp_map[corp_wallet.corporation_id].wallets = []
-            
+            if corp_wallet.corporation_id not in corp_balance_totals:
+                corp_balance_totals[corp_wallet.corporation_id] = corp_wallet.balance
+            else:
+                corp_balance_totals[corp_wallet.corporation_id] += corp_wallet.balance
+
             corp_map[corp_wallet.corporation_id].wallets.append(corp_wallet)
 
         corporations = corp_map.values()
         cache.set(cache_key, corporations, 300)
+        cache.set(cache_key_b, corp_balance_totals, 300)
 
     tt.add_time('corps')
 
@@ -330,6 +364,8 @@ def home(request):
             'total_sp': total_sp,
             'total_assets': total_assets,
             'corporations': corporations,
+            'corp_total_balance': corp_balance_totals,
+            'corp_total_assets': corp_total_assets,
             #'characters': first + last,
             'characters': char_lists,
             'events': list(Event.objects.filter(user=request.user)[:10]),
