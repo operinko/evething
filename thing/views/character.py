@@ -350,7 +350,7 @@ def character_common(request, char, public=True, anonymous=False):
                 }
                 other_mails.append(mail_d)
             
-            mail_data = (sent_mails, received_mails, other)
+            mail_data = (sent_mails, received_mails, other_mails)
             cache.set(cache_key, mail_data, 300)
             # Data was cached
         else:
