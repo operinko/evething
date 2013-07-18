@@ -4,6 +4,8 @@ from decimal import *
 from django import template
 from django.template.defaultfilters import stringfilter
 from django.utils.safestring import mark_safe
+import jingo
+import scrubber
 
 register = template.Library()
 
@@ -40,7 +42,7 @@ BILLION = 10**9
 def humanize(value):
     if value is None or value == '':
         return '0'
-    
+
     if value >= BILLION or value <= -BILLION:
         v = Decimal(value) / BILLION
         return '%sB' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
@@ -68,7 +70,7 @@ def duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)
-    
+
     parts = []
     if d:
         parts.append('%dd' % (d))
@@ -78,7 +80,7 @@ def duration(s):
         parts.append('%dm' % (m))
     if s:
         parts.append('%ds' % (s))
-    
+
     return ' '.join(parts)
 
 @register.filter
@@ -86,7 +88,7 @@ def duration_right(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)
-    
+
     parts = []
     if d:
         parts.append('%dd' % (d))
@@ -95,7 +97,7 @@ def duration_right(s):
     if m or h or d:
         parts.append('%02dm' % (m))
     parts.append('%02ds' % (s))
-    
+
     return ' '.join(parts)
 
 
@@ -128,7 +130,7 @@ def spanif(value, arg):
     parts = arg.split()
     if len(parts) != 3:
         return value
-    
+
     n = int(parts[2])
     if (parts[1] == '<' and value < n) or (parts[1] == '=' and value == n) or (parts[1] == '>' and value > n):
         return mark_safe('<span class="%s">%s</span>' % (parts[0], value))

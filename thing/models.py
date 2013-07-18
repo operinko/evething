@@ -438,9 +438,11 @@ class Contact(models.Model):
 
 # Mail Message headers
 class MailMessage(models.Model):
-    message_id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
+    from_char = models.ForeignKey('character', related_name='from_char')
+    message_id = models.IntegerField()
 
-    sender = models.ForeignKey('character')
+    sender = models.ForeignKey('character', related_name='sender')
     sent_date = models.DateTimeField()
     title = models.CharField(max_length=255, blank=True)
     to_corp_or_ally_id = models.IntegerField(null=True, blank=True)

@@ -74,7 +74,7 @@ def task_spawner():
     apikeys = apikeys.prefetch_related('characters', 'corp_character__corporation__corpwallet_set')
     #apikeys = apikeys.filter(valid=True, user__userprofile__last_seen__gt=one_month_ago)
     apikeys = apikeys.filter(valid=True)
-
+    
     # Get a set of unique API keys
     keys = {}
     status = {}
@@ -93,7 +93,7 @@ def task_spawner():
     # Iterate over each key, doing stuff
     for keyid, apikey in keys.items():
         masks = apikey.get_masks()
-
+        
         # All keys do keyinfo checks things
         func, url, queue = API_KEY_INFO_URL
         taskstate = status[keyid].get((url, 0), None)
@@ -150,7 +150,7 @@ def task_spawner():
             kwargs={},
             queue=queue,
         )
-
+    
     TaskState.objects.filter(pk__in=ts_ids).update(state=TaskState.QUEUED_STATE, mod_time=now)
 
     # Create the new ones, they can be started next time around
@@ -164,7 +164,7 @@ def task_spawner():
             mod_time=now,
             next_time=now,
         ))
-
+    
     TaskState.objects.bulk_create(new)
 
 # ---------------------------------------------------------------------------

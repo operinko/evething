@@ -11,3 +11,6 @@ worker*.pid
 build/*
 celerybeat-schedule
 .DS_Store
+api.lock
+thing/migrations/0088_auto__add_field_mailmessage_sender_type.py
+thing/migrations/0089_auto__del_field_mailmessage_sender_type.py

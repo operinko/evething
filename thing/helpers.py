@@ -180,23 +180,36 @@ def static(path):
     return staticfiles_storage.url(path)
 
 @register.filter
-def keeptags(text, tags):
-    """
-    Strips all [X]HTML tags except the space separated list of tags
-    from the output.
-
-    Usage: keeptags:"strong em ul li"
-    """
+def keeptags(value, tags):
     tags = [re.escape(tag) for tag in tags.split()]
-    tags_re = '(%s)' % '|'.join(tags)
-    singletag_re = re.compile(r'<(%s\s*/?)>' % tags_re)
-    starttag_re = re.compile(r'<(%s)(\s+[^>]+)>' % tags_re)
-    endtag_re = re.compile(r'<(/%s)>' % tags_re)
-    text = singletag_re.sub('##~~~\g<1>~~~##', text)
-    text = starttag_re.sub('##~~~\g<1>\g<3>~~~##', text)
-    text = endtag_re.sub('##~~~\g<1>~~~##', text)
-    text = strip_tags(text)
-    text = escape(text)
-    recreate_re = re.compile('##~~~([^~]+)~~~##')
-    text = recreate_re.sub('<\g<1>>', text)
-    return text
+
+    def _replacer(match):
+        if match.group(1) in tags:
+            return match.group(0)
+        else:
+            return u''
+
+    try:
+      return re.sub(r'</?([^> ]+).*?>', _replacer, value)
+    except:
+      return ''
+#def keeptags(text, tags):
+#    """
+#    Strips all [X]HTML tags except the space separated list of tags
+#   from the output.
+#
+#    Usage: keeptags:"strong em ul li"
+#    """
+#    tags = [re.escape(tag) for tag in tags.split()]
+#    tags_re = '(%s)' % '|'.join(tags)
+#    singletag_re = re.compile(r'<(%s\s*/?)>' % tags_re)
+#    starttag_re = re.compile(r'<(%s)(\s+[^>]+)>' % tags_re)
+#    endtag_re = re.compile(r'<(/%s)>' % tags_re)
+#    text = singletag_re.sub('##~~~\g<1>~~~##', text)
+#    text = starttag_re.sub('##~~~\g<1>\g<3>~~~##', text)
+#    text = endtag_re.sub('##~~~\g<1>~~~##', text)
+#    text = strip_tags(text)
+#    text = escape(text)
+#    recreate_re = re.compile('##~~~([^~]+)~~~##')
+#    text = recreate_re.sub('<\g<1>>', text)
+#    return text
