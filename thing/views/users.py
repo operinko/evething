@@ -39,7 +39,7 @@ def user(request):
     profiles = []
     for user in users:
         profiles.append(user.userprofile)
-        
+
     tt.add_time('profile')
     all_chars = {}
     total_sp = {}
@@ -48,7 +48,7 @@ def user(request):
     fsj_id = 211562930
     fsa_id = 98148924
     jew_id = 98048689
-    
+
     # Loop through profiles, work some magic.
     for profile in profiles:
         # Initialise various data structures
@@ -270,7 +270,7 @@ def user(request):
         tt.add_time('group')
 
         # Try retrieving corporations from cache
-        cache_key = 'home:corporations:%d' % (request.user.id)
+        cache_key = 'home:corporations:%d' % (profile.user.id)
         corporations = cache.get(cache_key)
 
         # Not cached, fetch from database and cache
@@ -576,25 +576,59 @@ def user_show(request, user):
 
     tt.add_time('group')
 
+    # Try getting total asset value for corporation in cache
+    cache_key = 'home:corp_total_assets:%d' % (profile.user.id)
+    corp_total_assets = cache.get(cache_key)
+    #corp_total_assets = None
+    # Not cached, fetch and cache
+    if corp_total_assets is None:
+      corp_ids_a = APIKey.objects.filter(user=profile.user.id).exclude(corp_character=None).values('corp_character__corporation')
+      corp_asset_totals = OrderedDict()
+      for corp_id in corp_ids_a:
+        total = AssetSummary.objects.filter(corporation_id=corp_id['corp_character__corporation']).aggregate(Sum('total_value'))
+        if corp_id['corp_character__corporation'] not in corp_asset_totals:
+            corp_asset_totals[corp_id['corp_character__corporation']] = total['total_value__sum']
+
+      corp_total_assets = corp_asset_totals
+      cache.set(cache_key, corp_total_assets, 300)
+
+      #corp_total_assets = AssetSummary.objects.filter(
+      #  corporation_id__in=corp_ids_a
+      #).aggregate(
+      #  t=Sum('total_value'),
+      #)['t']
+      #cache.set(cache_key, corp_total_assets, 300)
+
+
     # Try retrieving corporations from cache
     cache_key = 'home:corporations:%d' % (profile.user.id)
+    cache_key_b = 'home:corp_balances:%d' % (profile.user.id)
+    corp_balance_totals = cache.get(cache_key_b)
+    #corp_balance_totals = None
     corporations = cache.get(cache_key)
-
+    #corporations = None
     # Not cached, fetch from database and cache
     if corporations is None:
         corp_ids = APIKey.objects.filter(user=profile.user.id).exclude(corp_character=None).values('corp_character__corporation')
         corp_map = OrderedDict()
+        corp_balance_totals = OrderedDict()
         for corp_wallet in CorpWallet.objects.select_related().filter(corporation__in=corp_ids):
             if corp_wallet.corporation_id not in corp_map:
                 corp_map[corp_wallet.corporation_id] = corp_wallet.corporation
                 corp_map[corp_wallet.corporation_id].wallets = []
+            if corp_wallet.corporation_id not in corp_balance_totals:
+                corp_balance_totals[corp_wallet.corporation_id] = corp_wallet.balance
+            else:
+                corp_balance_totals[corp_wallet.corporation_id] += corp_wallet.balance
 
             corp_map[corp_wallet.corporation_id].wallets.append(corp_wallet)
 
         corporations = corp_map.values()
         cache.set(cache_key, corporations, 300)
+        cache.set(cache_key_b, corp_balance_totals, 300)
 
     tt.add_time('corps')
+
     out = render_page(
         'thing/user.html',
         {
@@ -604,6 +638,8 @@ def user_show(request, user):
             'total_sp': total_sp,
             'total_assets': total_assets,
             'corporations': corporations,
+            'corp_total_balance': corp_balance_totals,
+            'corp_total_assets': corp_total_assets,
             'characters': char_lists,
             'events': list(Event.objects.filter(user=profile.user)[:10]),
             'ship_map': ship_map,
@@ -618,7 +654,7 @@ def user_show(request, user):
         tt.finished()
 
     return out
-    
+
 def flatten(l, ltypes=(list, tuple)):
     ltype = type(l)
     l = list(l)
