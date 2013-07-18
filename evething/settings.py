@@ -104,6 +104,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
+    'uwsgi_admin',
     'south',
     'djcelery',
     'mptt',
@@ -164,6 +165,7 @@ JINGO_EXCLUDE_APPS = (
     'admin',
     'admindocs',
     'context_processors',
+    'uwsgi_admin',
 )
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.CachedStaticFilesStorage'
 
