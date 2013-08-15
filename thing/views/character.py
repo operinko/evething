@@ -1,4 +1,6 @@
 import re
+import string
+import random
 
 try:
     from collections import OrderedDict
@@ -61,6 +63,8 @@ def character_common(request, char, public=True, anonymous=False):
         'queue': anonymous or not public or char.config.show_skill_queue or request.user.is_staff,
         'standings': not anonymous and (not public or char.config.show_standings or request.user.is_staff),
         'wallet': not anonymous and (not public or char.config.show_wallet or request.user.is_staff),
+	'mail': not anonymous and (not public or char.config.show_standings or request.user.is_staff),
+	'contacts': not anonymous and (not public or char.config.show_standings or request.user.is_staff),
     }
 
     # Retrieve skill queue
@@ -188,7 +192,7 @@ def character_common(request, char, public=True, anonymous=False):
 
     tt.add_time('skill plans')
 
-    if show['standings']:
+    if show['standings'] and anonymous == False:
         # Try retrieving standings data from cache
         cache_key = 'character:standings:%s' % (char.id)
         standings_data = cache.get(cache_key)
@@ -197,20 +201,40 @@ def character_common(request, char, public=True, anonymous=False):
         if standings_data is None:
             faction_standings = list(char.factionstanding_set.select_related().all())
             corp_standings = list(char.corporationstanding_set.select_related().all())
-            contacts_char = list(Contact.objects.filter(character__id=char.id, contact_type="contactList"))
-            contacts_corp = list(Contact.objects.filter(character__id=char.id, contact_type="corporateContactList"))
-            contacts_ally = list(Contact.objects.filter(character__id=char.id, contact_type="allianceContactList"))
-            standings_data = (faction_standings, corp_standings, contacts_char, contacts_corp, contacts_ally)
+            standings_data = (faction_standings, corp_standings)
             cache.set(cache_key, standings_data, 300)
         # Data was cached
         else:
-            faction_standings, corp_standings, contacts_char, contacts_corp, contacts_ally = standings_data
+            faction_standings, corp_standings = standings_data
     else:
         faction_standings = []
         corp_standings = []
-        contacts = []
+
+    tt.add_time('standings')
+
+    if show['contacts']:
+	# Try getting from cache first
+	cache_key = 'character:contacts:%s' % (char.id)
+	contacts_data = cache.get(cache_key)
+	
+	# Not cached, fetch from database and cache
+	if contacts_data is None:
+		contacts_char = list(Contact.objects.filter(character__id=char.id, contact_type="contactlist"))
+		contacts_corp = list(Contact.objects.filter(character__id=char.id, contact_type="corporateContactList"))
+		contacts_ally = list(Contact.objects.filter(character__id=char.id, contact_type="allianceContactList"))
+		contacts_data = (contacts_char, contacts_corp, contacts_ally)
+		cache.set(cache_key, contacts_data, 300)
+	# Data was cached
+	else:
+		contacts_char, contacts_corp, contacts_ally = contacts_data
+    else:
+	contacts_char = []
+	contacts_corp = []
+	contacts_ally = []
+
+    tt.add_time('contacts')
     
-    if show['standings']:
+    if show['mail']:
         # Try retrieving character mail messages from cache
         cache_key = 'character:mails:%s' % (char.id)
         #mail_data = cache.get(cache_key)
@@ -355,6 +379,12 @@ def character_common(request, char, public=True, anonymous=False):
             # Data was cached
         else:
             sent_mails, received_mails, other_mails = mail_data
+    else:
+	sent_mails = []
+	received_mails = []
+	other_mails = []
+
+    tt.add_time('mails')
             
     # Render template
     out = render_page(
@@ -408,7 +438,10 @@ def character_settings(request, character_name):
         if ANON_KEY_RE.match(anon_key) and len(anon_key) == 16:
             char.config.anon_key = anon_key
         else:
-            char.config.anon_key = None
+  	    # Create a random string for anon-key
+	    CANDIDATE_CHARS = string.ascii_lowercase+string.digits # Lowercase letters and digits
+	    random_string = u''.join(random.choice(CANDIDATE_CHARS) for _ in range(16)) # 16 characters in the random string
+            char.config.anon_key = random_string
     else:
         char.config.anon_key = None
 
