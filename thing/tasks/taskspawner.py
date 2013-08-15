@@ -1,3 +1,28 @@
+# ------------------------------------------------------------------------------
+# Copyright (c) 2010-2013, EVEthing team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#     Redistributions of source code must retain the above copyright notice, this
+#       list of conditions and the following disclaimer.
+#     Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
+#       and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+# ------------------------------------------------------------------------------
+
 import datetime
 import os
 import sys
@@ -18,6 +43,8 @@ CHAR_URLS = {
     APIKey.CHAR_CHARACTER_SHEET_MASK: ('thing.character_sheet', '/char/CharacterSheet.xml.aspx', 'et_medium'),
     APIKey.CHAR_CONTRACTS_MASK: ('thing.contracts', '/char/Contracts.xml.aspx', 'et_medium'),
     APIKey.CHAR_INDUSTRY_JOBS_MASK: ('thing.industry_jobs', '/char/IndustryJobs.xml.aspx', 'et_medium'),
+    APIKey.CHAR_MAILING_LISTS_MASK: ('thing.mailing_lists', '/char/MailingLists.xml.aspx', 'et_medium'),
+    APIKey.CHAR_MAIL_MESSAGES_MASK: ('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium'),
     APIKey.CHAR_MARKET_ORDERS_MASK: ('thing.market_orders', '/char/MarketOrders.xml.aspx', 'et_medium'),
     APIKey.CHAR_SKILL_QUEUE_MASK: ('thing.skill_queue', '/char/SkillQueue.xml.aspx', 'et_medium'),
     APIKey.CHAR_STANDINGS_MASK: ('thing.standings', '/char/Standings.xml.aspx', 'et_medium'),
@@ -34,12 +61,12 @@ CORP_URLS = {
     APIKey.CORP_CORPORATION_SHEET_MASK: ('thing.corporation_sheet', '/corp/CorporationSheet.xml.aspx', 'et_medium'),
     APIKey.CORP_INDUSTRY_JOBS_MASK: ('thing.industry_jobs', '/corp/IndustryJobs.xml.aspx', 'et_medium'),
     APIKey.CORP_MARKET_ORDERS_MASK: ('thing.market_orders', '/corp/MarketOrders.xml.aspx', 'et_medium'),
-    # APIKey.CORP_MEMBER_TRACKING_MASK: ('thing.member_tracking', '/corp/MemberTracking.xml.aspx', 'et_medium'),
-    # APIKey.CORP_OUTPOST_LIST_MASK: ('outpost_list', '/corp/OutpostList.xml.aspx', 'et_medium'),
-    # APIKey.CORP_SHAREHOLDERS_MASK: ('thing.shareholders', '/corp/Shareholders.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/corp/WalletJournal.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/corp/WalletTransactions.xml.aspx', 'et_medium'),
 }
+# APIKey.CORP_MEMBER_TRACKING_MASK: ('thing.member_tracking', '/corp/MemberTracking.xml.aspx', 'et_medium'),
+# APIKey.CORP_OUTPOST_LIST_MASK: ('outpost_list', '/corp/OutpostList.xml.aspx', 'et_medium'),
+# APIKey.CORP_SHAREHOLDERS_MASK: ('thing.shareholders', '/corp/Shareholders.xml.aspx', 'et_medium'),
 
 GLOBAL_TASKS = (
     ('thing.alliance_list', '/eve/AllianceList.xml.aspx', 'et_medium'),
@@ -93,12 +120,16 @@ def task_spawner():
     # Iterate over each key, doing stuff
     for keyid, apikey in keys.items():
         masks = apikey.get_masks()
-        
+
         # All keys do keyinfo checks things
         func, url, queue = API_KEY_INFO_URL
         taskstate = status[keyid].get((url, 0), None)
 
         _init_taskstate(taskdata, now, taskstate, keyid, apikey.id, func, url, queue, 0)
+
+        # Don't do anything else if this key needs APIKeyInfo
+        if apikey.needs_apikeyinfo:
+            continue
 
         # Account/character keys
         if apikey.key_type in (APIKey.ACCOUNT_TYPE, APIKey.CHARACTER_TYPE):
@@ -150,7 +181,7 @@ def task_spawner():
             kwargs={},
             queue=queue,
         )
-    
+
     TaskState.objects.filter(pk__in=ts_ids).update(state=TaskState.QUEUED_STATE, mod_time=now)
 
     # Create the new ones, they can be started next time around
@@ -164,7 +195,7 @@ def task_spawner():
             mod_time=now,
             next_time=now,
         ))
-    
+
     TaskState.objects.bulk_create(new)
 
 # ---------------------------------------------------------------------------

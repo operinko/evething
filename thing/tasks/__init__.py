@@ -15,6 +15,9 @@ from contracts import Contracts
 from corporationsheet import CorporationSheet
 from industryjobs import IndustryJobs
 from locations import Locations
+from mailinglists import MailingLists
+from mailbodies import MailBodies
+from mailmessages import MailMessages
 from marketorders import MarketOrders
 # from membertracking import MemberTracking
 # from shareholders import Shareholders
@@ -33,5 +36,6 @@ from reftypes import RefTypes
 from serverstatus import ServerStatus
 
 # Periodic tasks
+from fixnames import FixNames
 from historyupdater import HistoryUpdater
 from priceupdater import PriceUpdater

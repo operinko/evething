@@ -1,3 +1,28 @@
+# ------------------------------------------------------------------------------
+# Copyright (c) 2010-2013, EVEthing team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#     Redistributions of source code must retain the above copyright notice, this
+#       list of conditions and the following disclaimer.
+#     Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
+#       and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+# ------------------------------------------------------------------------------
+
 import gzip
 from cStringIO import StringIO
 
@@ -184,15 +209,15 @@ def account_apikey_delete(request):
     if apikey_id.isdigit():
         try:
             apikey = APIKey.objects.get(user=request.user.id, id=apikey_id)
-        
+
         except APIKey.DoesNotExist:
             request.session['message_type'] = 'error'
             request.session['message'] = 'You do not have an API key with that KeyID!'
-        
+
         else:
             request.session['message_type'] = 'success'
             request.session['message'] = 'API key %s deleted successfully!' % (apikey.id)
-            
+
             apikey.delete()
 
     else:
@@ -211,7 +236,7 @@ def account_apikey_edit(request):
     except APIKey.DoesNotExist:
         request.session['message_type'] = 'error'
         request.session['message'] = 'You do not have an API key with that KeyID!'
-    
+
     else:
         request.session['message_type'] = 'success'
         request.session['message'] = 'API key %s edited successfully!' % (apikey.id)
@@ -238,11 +263,11 @@ def account_apikey_purge(request):
     if apikey_id.isdigit():
         try:
             apikey = APIKey.objects.get(user=request.user.id, id=apikey_id)
-        
+
         except APIKey.DoesNotExist:
             request.session['message_type'] = 'error'
             request.session['message'] = 'You do not have an API key with that KeyID!'
-        
+
         else:
             request.session['message_type'] = 'success'
             request.session['message'] = 'API key %s purge queued successfully!' % (apikey.id)
@@ -255,5 +280,207 @@ def account_apikey_purge(request):
 
     return redirect('%s#tab_apikeys' % (reverse(account)))
 
+# ---------------------------------------------------------------------------
+# Add a skillplan
+@login_required
+def account_skillplan_add(request):
+    if request.method == 'POST':
+        form = UploadSkillPlanForm(request.POST, request.FILES)
+        if form.is_valid():
+            _handle_skillplan_upload(request)
+            return redirect('%s#tab_skillplans' % (reverse(account)))
+        else:
+            request.session['message_type'] = 'error'
+            request.session['message'] = 'Form validation failed!'
+    else:
+        request.session['message_type'] = 'error'
+        request.session['message'] = "That doesn't look like a POST request!"
 
+    return redirect('%s#tab_skillplans' % (reverse(account)))
+
+# ---------------------------------------------------------------------------
+# Delete a skillplan
+@login_required
+def account_skillplan_delete(request):
+    skillplan_id = request.POST.get('skillplan_id', '')
+    if skillplan_id.isdigit():
+        try:
+            skillplan = SkillPlan.objects.get(user=request.user, id=skillplan_id)
+
+        except SkillPlan.DoesNotExist:
+            request.session['message_type'] = 'error'
+            request.session['message'] = 'You do not own that skill plan!'
+
+        else:
+            request.session['message_type'] = 'success'
+            request.session['message'] = 'Skill plan "%s" deleted successfully!' % (skillplan.name)
+
+            # Delete all of the random things for this skillplan
+            entries = SPEntry.objects.filter(skill_plan=skillplan)
+            SPRemap.objects.filter(pk__in=[e.sp_remap_id for e in entries if e.sp_remap_id]).delete()
+            SPSkill.objects.filter(pk__in=[e.sp_skill_id for e in entries if e.sp_skill_id]).delete()
+            entries.delete()
+            skillplan.delete()
+
+    else:
+        request.session['message_type'] = 'error'
+        request.session['message'] = 'You seem to be doing silly things, stop that.'
+
+    return redirect('%s#tab_skillplans' % (reverse(account)))
+
+# ---------------------------------------------------------------------------
+# Edit a skillplan
+@login_required
+def account_skillplan_edit(request):
+    skillplan_id = request.POST.get('skillplan_id', '')
+    if skillplan_id.isdigit():
+        try:
+            skillplan = SkillPlan.objects.get(user=request.user, id=skillplan_id)
+
+        except SkillPlan.DoesNotExist:
+            request.session['message_type'] = 'error'
+            request.session['message'] = 'You do not own that skill plan!'
+
+        else:
+            skillplan.name = request.POST['name']
+            skillplan.visibility = request.POST['visibility']
+            skillplan.save()
+
+            request.session['message_type'] = 'success'
+            request.session['message'] = 'Skill plan "%s" edited successfully!' % (skillplan.name)
+
+    else:
+        request.session['message_type'] = 'error'
+        request.session['message'] = 'You seem to be doing silly things, stop that.'
+
+    return redirect('%s#tab_skillplans' % (reverse(account)))
+
+# ---------------------------------------------------------------------------
+
+def _handle_skillplan_upload(request):
+    name = request.POST['name'].strip()
+    uf = request.FILES['file']
+    visibility = request.POST['visibility']
+
+    # Check that this name is unique for the user
+    if SkillPlan.objects.filter(user=request.user, name=name).count() > 0:
+        request.session['message_type'] = 'error'
+        request.session['message'] = "You already have a skill plan with that name!"
+        return
+
+    # Check file size, 10KB should be more than large enough
+    if uf.size > 10240:
+        request.session['message_type'] = 'error'
+        request.session['message'] = "That file is too large!"
+        return
+
+    data = StringIO(uf.read())
+
+    # Try opening it as a gzip file
+    gf = gzip.GzipFile(fileobj=data)
+    try:
+        data = gf.read()
+    except IOError:
+        request.session['message_type'] = 'error'
+        request.session['message'] = "That doesn't look like a .EMP file!"
+        return
+
+    # Make sure it's valid XML
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError:
+        request.session['message_type'] = 'error'
+        request.session['message'] = "That doesn't look like a .EMP file!"
+        return
+
+    # FINALLY
+    skillplan = SkillPlan.objects.create(
+        user=request.user,
+        name=name,
+        visibility=visibility,
+    )
+
+    _parse_emp_plan(skillplan, root)
+
+    request.session['message_type'] = 'success'
+    request.session['message'] = "Skill plan uploaded successfully."
+
+
+def _parse_emp_plan(skillplan, root):
+    entries = []
+    position = 0
+    seen = {}
+
+    for entry in root.findall('entry'):
+        # Create the various objects for the remapping if it exists
+        remapping = entry.find('remapping')
+        if remapping is not None:
+            # <remapping status="UpToDate" per="17" int="27" mem="21" wil="17" cha="17" description="" />
+            spr = SPRemap.objects.create(
+                int_stat=remapping.attrib['int'],
+                mem_stat=remapping.attrib['mem'],
+                per_stat=remapping.attrib['per'],
+                wil_stat=remapping.attrib['wil'],
+                cha_stat=remapping.attrib['cha'],
+            )
+
+            entries.append(SPEntry(
+                skill_plan=skillplan,
+                position=position,
+                sp_remap=spr,
+            ))
+
+            position += 1
+
+        # Grab some data we'll need
+        skillID = int(entry.attrib['skillID'])
+        level = int(entry.attrib['level'])
+        priority = int(entry.attrib['priority'])
+
+        # Get prereqs for this skill
+        prereqs = Skill.get_prereqs(skillID)
+
+        # Add any missing prereq skills
+        for pre_skill_id, pre_level in prereqs:
+            for i in range(seen.get(pre_skill_id, 0) + 1, pre_level + 1):
+                try:
+                    sps = SPSkill.objects.create(
+                        skill_id=pre_skill_id,
+                        level=i,
+                        priority=priority,
+                    )
+                except:
+                    continue
+
+                entries.append(SPEntry(
+                    skill_plan=skillplan,
+                    position=position,
+                    sp_skill=sps,
+                ))
+
+                position += 1
+                seen[pre_skill_id] = i
+
+
+        # Add the actual skill
+        for i in range(seen.get(skillID, 0) + 1, level + 1):
+            try:
+                sps = SPSkill.objects.create(
+                    skill_id=skillID,
+                    level=i,
+                    priority=priority,
+                )
+            except:
+                continue
+
+            entries.append(SPEntry(
+                skill_plan=skillplan,
+                position=position,
+                sp_skill=sps,
+            ))
+
+            position += 1
+            seen[skillID] = i
+
+    SPEntry.objects.bulk_create(entries)
 # ---------------------------------------------------------------------------

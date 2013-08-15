@@ -108,7 +108,7 @@ INSTALLED_APPS = (
     'south',
     'djcelery',
     'mptt',
-    'jingo',
+    #'jingo',
     'thing',
     'registration',
 )
@@ -246,24 +246,13 @@ CELERYBEAT_SCHEDULE = {
         'args': (),
     },
 
-    # # update unknown Characters every hour
-    # 'fix-unknown-characters': {
-    #     'task': 'thing.tasks.fix_unknown_characters',
-    #     'schedule': timedelta(hours=1),
-    #     'options': {
-    #         'expires': 59 * 60,
-    #     },
-    #     'args': (),
-    # },
-
-    # # generate hourly task summaries at xx:01
-    # 'task-summaries': {
-    #     'task': 'thing.tasks.task_summaries',
-    #     'schedule': crontab(minute=1),
-    #     'options': {
-    #         'expires': 9,
-    #         'queue': 'et_high',
-    #     },
-    #     'args': (),
-    # },
+    # update unknown character/corporation names every hour
+    'fix-names': {
+        'task': 'thing.fix_names',
+        'schedule': timedelta(hours=1),
+        'options': {
+            'expires': 59 * 60,
+        },
+        'args': (),
+    },
 }

@@ -1,3 +1,28 @@
+# ------------------------------------------------------------------------------
+# Copyright (c) 2010-2013, EVEthing team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#     Redistributions of source code must retain the above copyright notice, this
+#       list of conditions and the following disclaimer.
+#     Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
+#       and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+# ------------------------------------------------------------------------------
+
 import datetime
 import gzip
 import time
@@ -17,21 +42,23 @@ from django.template import RequestContext
 # ---------------------------------------------------------------------------
 # Wrapper around render_to_response
 def render_page(template, data, request, character_ids=None, corporation_ids=None):
-    from thing.models import APIKey, Character, Corporation, Contract, IndustryJob, TaskState
+    from thing.models import APIKey, Character, Corporation, Contract, IndustryJob, MailMessage, TaskState
 
     utcnow = datetime.datetime.utcnow()
-    
+
     data['server_open'] = cache.get('server_open')
     data['online_players'] = cache.get('online_players')
 
     if request.user.is_authenticated():
-        # Get Contracts/Industry Jobs data
+        # Get nav counts data
         cache_key = 'nav_counts:%s' % (request.user.id)
         cc = cache.get(cache_key)
 
         if cc:
+            print 'cached'
             data['nav_contracts'] = cc[0]
             data['nav_industryjobs'] = cc[1]
+            data['nav_mail'] = cc[2]
         else:
             if character_ids is None:
                 character_ids = list(Character.objects.filter(apikeys__user=request.user.id).values_list('id', flat=True))
@@ -51,16 +78,24 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
 
             # Aggregate ready industry jobs
             jobs = IndustryJob.objects.filter(
-                Q(character__in=character_ids, corporation__isnull=True)
-                |
-                Q(corporation__in=corporation_ids)
+               Q(character__in=character_ids, corporation__isnull=True)
+               |
+               Q(corporation__in=corporation_ids)
             )
             jobs = jobs.filter(completed=False, end_time__lte=utcnow)
             data['nav_industryjobs'] = jobs.aggregate(t=Count('id'))['t']
 
+            # Aggregate unread mail messages
+            data['nav_mail'] = MailMessage.objects.filter(
+                character__in=character_ids,
+                read=False,
+            ).values(
+                'message_id',
+            ).distinct().count()
+
             # Cache data
-            cache_data = (data['nav_contracts'], data['nav_industryjobs'])
-            cache.set(cache_key, cache_data, 120)
+            cache_data = (data['nav_contracts'], data['nav_industryjobs'], data['nav_mail'])
+            cache.set(cache_key, cache_data, 300)
 
         # Get queue length data
         data['task_count'] = cache.get('task_count')
@@ -69,6 +104,13 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
             cache.set('task_count', data['task_count'], 60)
 
     return render_to_response(template, data, RequestContext(request))
+
+# ---------------------------------------------------------------------------
+
+def flush_cache(user):
+    if user.is_authenticated():
+        cache_key = 'nav_counts:%s' % (user.id)
+        cache.delete(cache_key)
 
 # ---------------------------------------------------------------------------
 # Times things
